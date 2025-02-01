@@ -1,34 +1,91 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
+
 import './App.css'
+import { ethers } from 'ethers';
+import abi from '../abi.json';
+
+const contractAddress = '0x807f8747Af54f35A09bE084db8d12561ce6a3E72';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [studentName, SetStudentName] = useState('');
+  const [studentId, SetStudentId] = useState('');
+
+  async function requestAccount() {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+  }
+
+  async function registerStudent() {
+    if(typeof window.ethereum !== 'undefined') {
+      await requestAccount();
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+
+    try{
+      const transaction = await contract.registerStudent(studentName);
+      await transaction.wait();
+      alert(`${studentName} is now registered`);
+    } catch (err) {
+      console.log(err);
+      alert(`Transaction failed ${err}`);
+    }
+  }
+
+  async function removeStudent() {
+    if(typeof window.ethereum !== 'undefined') {
+      await requestAccount();
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+
+    try {
+      const transaction = await contract.removeStudent(studentId);
+      await transaction.wait();
+      alert(`${studentName} is now removed`);
+    } catch (err) {
+      console.log(err);
+      alert(`Transaction failed ${err}`);
+    }
+  }
+
+  async function getStudent() {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const contract = new ethers.Contract(contractAddress, abi, provider);
+
+    try {
+      const student = await contract.getStudent(studentId);
+      alert(`Student name: ${student}`);
+    } catch (err) {
+      console.log(err);
+      alert(`Transaction failed ${err}`);
+    }
+  }
 
   return (
-    <>
+    <div className="App">
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <input type="text" placeholder="Enter student name" onChange={(e) => SetStudentName(e.target.value)} />
+        <button onClick={registerStudent}>Register Student</button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div>
+        <input type="text" placeholder="Enter student ID" onChange={(e) => SetStudentId(e.target.value)} />
+        <button onClick={removeStudent}>Remove Student</button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <div>
+        <input type="text" placeholder="Enter student ID" onChange={(e) => SetStudentId(e.target.value)} />
+        <button onClick={getStudent}>Get Student</button>
+      </div>
+    </div>
   )
 }
 
